@@ -245,7 +245,7 @@ public class WordToHtml implements IHtml {
 		try {
 			// String text =
 			// WordToHtml.readDoc("/Users/lijian/Documents/e.doc");
-			HWPFDocumentCore wordDocument = WordToHtmlUtils
+			/*HWPFDocumentCore wordDocument = WordToHtmlUtils
 					.loadDoc(new FileInputStream("c://test//test.doc"));
 
 			WordToHtmlConverter wordToHtmlConverter = new WordToHtmlConverter(
@@ -267,8 +267,9 @@ public class WordToHtml implements IHtml {
 			out.close();
 
 			String result = new String(out.toByteArray());
-			System.out.println(result);
+			System.out.println(result);*/
 			// System.out.println(text);
+			Runtime.getRuntime().exec("taskKill /F /IM winword.exe");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
