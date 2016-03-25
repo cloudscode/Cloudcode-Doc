@@ -1,23 +1,16 @@
 package com.cloudcode.doc.utils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import org.apache.poi.hwpf.HWPFDocumentCore;
-import org.apache.poi.hwpf.converter.WordToHtmlConverter;
-import org.apache.poi.hwpf.converter.WordToHtmlUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -245,29 +238,31 @@ public class WordToHtml implements IHtml {
 		try {
 			// String text =
 			// WordToHtml.readDoc("/Users/lijian/Documents/e.doc");
-			/*HWPFDocumentCore wordDocument = WordToHtmlUtils
-					.loadDoc(new FileInputStream("c://test//test.doc"));
-
-			WordToHtmlConverter wordToHtmlConverter = new WordToHtmlConverter(
-					DocumentBuilderFactory.newInstance().newDocumentBuilder()
-							.newDocument());
-			wordToHtmlConverter.processDocument(wordDocument);
-			org.w3c.dom.Document htmlDocument = wordToHtmlConverter
-					.getDocument();
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			DOMSource domSource = new DOMSource(htmlDocument);
-			StreamResult streamResult = new StreamResult(out);
-
-			TransformerFactory tf = TransformerFactory.newInstance();
-			Transformer serializer = tf.newTransformer();
-			serializer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-			serializer.setOutputProperty(OutputKeys.INDENT, "yes");
-			serializer.setOutputProperty(OutputKeys.METHOD, "html");
-			serializer.transform(domSource, streamResult);
-			out.close();
-
-			String result = new String(out.toByteArray());
-			System.out.println(result);*/
+			/*
+			 * HWPFDocumentCore wordDocument = WordToHtmlUtils .loadDoc(new
+			 * FileInputStream("c://test//test.doc"));
+			 * 
+			 * WordToHtmlConverter wordToHtmlConverter = new
+			 * WordToHtmlConverter(
+			 * DocumentBuilderFactory.newInstance().newDocumentBuilder()
+			 * .newDocument());
+			 * wordToHtmlConverter.processDocument(wordDocument);
+			 * org.w3c.dom.Document htmlDocument = wordToHtmlConverter
+			 * .getDocument(); ByteArrayOutputStream out = new
+			 * ByteArrayOutputStream(); DOMSource domSource = new
+			 * DOMSource(htmlDocument); StreamResult streamResult = new
+			 * StreamResult(out);
+			 * 
+			 * TransformerFactory tf = TransformerFactory.newInstance();
+			 * Transformer serializer = tf.newTransformer();
+			 * serializer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+			 * serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+			 * serializer.setOutputProperty(OutputKeys.METHOD, "html");
+			 * serializer.transform(domSource, streamResult); out.close();
+			 * 
+			 * String result = new String(out.toByteArray());
+			 * System.out.println(result);
+			 */
 			// System.out.println(text);
 			Runtime.getRuntime().exec("taskKill /F /IM winword.exe");
 		} catch (Exception e) {
@@ -332,5 +327,118 @@ public class WordToHtml implements IHtml {
 			return true;
 		}
 		return false;
+	}
+
+	public static Map<String, String> replaceAllWordBookMark(String docfile,
+			Map<String, Object> map) {
+		Map<String, String> bookMark = new HashMap<String, String>();
+		ActiveXComponent word = new ActiveXComponent("Word.Application");
+		try {
+			word.setProperty("Visible", new Variant(true));
+		} catch (Exception e) {
+			e.printStackTrace();
+			word = new ActiveXComponent("Word.Application");
+			word.setProperty("Visible", new Variant(true));
+		}
+
+		word.setProperty("AutomationSecurity", new Variant(3));
+		Dispatch documents = word.getProperty("Documents").toDispatch();
+		Dispatch doc = Dispatch.call(documents, "Open", docfile).toDispatch();
+		try {
+			String value = "";
+			Dispatch bookMarks = word.call(doc, "Bookmarks").toDispatch();
+			int bCount = Dispatch.get(bookMarks, "Count").getInt();
+			for (int i = 1; i <= bCount; i++) {
+				try {
+					value = "";
+					Dispatch item = Dispatch.call(bookMarks, "Item", i)
+							.toDispatch();
+					String name = String.valueOf(Dispatch.get(item, "Name")
+							.getString());// 读取书签命名
+					Dispatch range = Dispatch.get(item, "Range").toDispatch();
+					if (null != map && map.containsKey(name)) {
+						if (null != map.get(name))
+							value = map.get(name).toString();
+					}
+					Dispatch.put(range, "Text", new Variant(value));
+					Dispatch.call(bookMarks, "Add", name, range);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			Dispatch.call(doc, "SaveAs");
+			Dispatch.call(doc, "Close", new Variant(true));
+			if (word != null)
+				word.invoke("Quit", new Variant[] {});
+		}
+		return bookMark;
+	}
+
+	private static final String prefixStr = "${";
+	private static final String suffixStr = "!''}";
+
+	public static Map<String, String> replaceAllWordBookMarkToFtl(
+			String docfile, Map<String, Object> map, boolean removeBookMark) {
+		Map<String, String> bookMark = new HashMap<String, String>();
+		ActiveXComponent word = new ActiveXComponent("Word.Application");
+		try {
+			word.setProperty("Visible", new Variant(true));
+		} catch (Exception e) {
+			e.printStackTrace();
+			word = new ActiveXComponent("Word.Application");
+			word.setProperty("Visible", new Variant(true));
+		}
+
+		word.setProperty("AutomationSecurity", new Variant(3));
+		Dispatch documents = word.getProperty("Documents").toDispatch();
+		Dispatch doc = Dispatch.call(documents, "Open", docfile).toDispatch();
+		try {
+			String value = "";
+			Dispatch bookMarks = word.call(doc, "Bookmarks").toDispatch();
+			int bCount = Dispatch.get(bookMarks, "Count").getInt();
+			List<String> markLists = new ArrayList<String>();
+			for (int i = 1; i <= bCount; i++) {
+				try {
+
+					Dispatch item = Dispatch.call(bookMarks, "Item", i)
+							.toDispatch();
+					String name = String.valueOf(Dispatch.get(item, "Name")
+							.getString());
+					value = prefixStr + name + suffixStr;
+					Dispatch range = Dispatch.get(item, "Range").toDispatch();
+					if (null != map && map.containsKey(name)) {
+						if (null != map.get(name))
+							value = map.get(name).toString();
+					}
+					Dispatch.put(range, "Text", new Variant(value));
+					Dispatch.call(bookMarks, "Add", name, range);
+					markLists.add(name);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			if (removeBookMark) {
+				for (String key : markLists) {
+					boolean exist = word.call(bookMarks, "Exists", key)
+							.toBoolean();
+					if (exist) {
+						Dispatch removeDis = Dispatch.call(bookMarks, "Item",
+								key).toDispatch();
+						Dispatch.call(removeDis, "Delete");
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			Dispatch.call(doc, "SaveAs");
+			Dispatch.call(doc, "Close", new Variant(true));
+			if (word != null)
+				word.invoke("Quit", new Variant[] {});
+		}
+		return bookMark;
 	}
 }
