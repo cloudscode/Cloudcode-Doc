@@ -14,7 +14,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.cloudcode.doc.dao.DocDao;
 import com.cloudcode.doc.model.Doc;
-import com.cloudcode.doc.utils.WordToHtml;
+import com.cloudcode.doc.utils.WordUtils;
 import com.cloudcode.framework.controller.CrudController;
 
 @Controller
@@ -45,13 +45,7 @@ public class DocController extends CrudController<Doc> {
 	public @ResponseBody void createFuturesType(@ModelAttribute  @Valid Doc doc, HttpServletRequest request) {
 		String text = "C://test//test.doc";
 		String html="C://test//test.html";
-		WordToHtml.wordToHtml(text, html);
-	}
-	
-	@Override
-	protected Validator getValidator() {
-		// TODO Auto-generated method stub
-		return null;
+		WordUtils.wordToHtml(text, html);
 	}
 	
 }

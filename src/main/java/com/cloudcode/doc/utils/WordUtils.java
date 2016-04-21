@@ -15,17 +15,21 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.textmining.text.extraction.WordExtractor;
 
 import com.cloudcode.doc.utils.inter.IHtml;
+import com.cloudcode.framework.utils.FileUtils;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.jacob.activeX.ActiveXComponent;
 import com.jacob.com.Dispatch;
 import com.jacob.com.Variant;
 
-public class WordToHtml implements IHtml {
-
+public class WordUtils implements IHtml {
+	private static final Logger logger = LoggerFactory
+			.getLogger(WordUtils.class);
 	public String getContent(String filePath) {
 
 		return null;
@@ -33,7 +37,8 @@ public class WordToHtml implements IHtml {
 
 	public static final int HTML_WORD = 1;
 	public static final int WORD_HTML = 8;
-
+	public static final int wdDoNotSaveChanges = 0;// 不保存待定的更改。
+	public static final int wdFormatPDF = 17;// PDF 格式
 	public static boolean htmlToWord(String htmlfile, String docfile) {
 		boolean b = false;
 		ActiveXComponent app = new ActiveXComponent("Word.Application");
@@ -138,7 +143,7 @@ public class WordToHtml implements IHtml {
 	}
 
 	public static String getTempPath() {
-		String path = WordToHtml.class.getClassLoader().getResource("/")
+		String path = WordUtils.class.getClassLoader().getResource("/")
 				.getPath().substring(1);
 		int index = path.lastIndexOf("/WEB-INF/classes");
 		if (index > -1) {
@@ -231,7 +236,7 @@ public class WordToHtml implements IHtml {
 	}
 
 	public static void main(String[] args) {
-		WordToHtml.read("c://test//test.doc");
+		WordUtils.read("c://test//test.doc");
 	}
 
 	public static void main2(String[] args) {
@@ -440,5 +445,48 @@ public class WordToHtml implements IHtml {
 				word.invoke("Quit", new Variant[] {});
 		}
 		return bookMark;
+	}
+	public static void wordToPDF(String sfileName, String toFileName) {
+		long start = System.currentTimeMillis();
+		ActiveXComponent app = null;
+		try {
+			app = new ActiveXComponent("Word.Application");
+			Dispatch docs = app.getProperty("Documents").toDispatch();
+			Dispatch doc = Dispatch.call(docs,//
+					"Open", //
+					sfileName,// FileName
+					false,// ConfirmConversions
+					true // ReadOnly
+					).toDispatch();
+
+			Dispatch word=Dispatch.get(doc, "Revisions").toDispatch();
+			Dispatch.call(word, "AcceptAll");
+			
+			Dispatch ActiveWindow=Dispatch.get(doc, "ActiveWindow").toDispatch();
+			Dispatch View=Dispatch.get(ActiveWindow, "View").toDispatch();
+			Dispatch.put(View,"ShowRevisionsAndComments",false);
+			Dispatch.put(View,"RevisionsView",0);			
+			File tofile = new File(toFileName);
+			if (tofile.exists()) {
+				tofile.delete();
+			}
+			Dispatch.call(doc,//
+					"SaveAs", //
+					toFileName, // FileName
+					wdFormatPDF);
+			Dispatch.call(doc, "Close", false);
+
+			long end = System.currentTimeMillis();
+			System.out.println("转换完成..用时：" + (end - start) + "ms.");
+			
+		} catch (Exception e) {
+			logger.error("微软wordToPDF 转换异常，转换文件为："+sfileName+",错误信息：：："+e.getMessage());
+			e.printStackTrace();
+			System.out.println(" Error:微软wordToPDF 文档转换失败：" + e.getMessage());
+		} finally {
+			if (app != null)
+				app.invoke("Quit", wdDoNotSaveChanges);
+		}
+
 	}
 }
