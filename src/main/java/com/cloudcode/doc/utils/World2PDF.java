@@ -14,7 +14,18 @@ import org.docx4j.fonts.Mapper;
 import org.docx4j.fonts.PhysicalFonts;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 
+import com.cloudcode.framework.utils.StringUtils;
+import com.cloudcode.framework.utils.UUID;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.PdfStamper;
+import com.jacob.activeX.ActiveXComponent;
+import com.jacob.com.Dispatch;
+
 public class World2PDF {
+	public static final int wdDoNotSaveChanges = 0;// 不保存待定的更改。
+	public static final int wdFormatPDF = 17;// PDF 格式
 	public static void main(String[] args) {
         createPDF();
         createPDF();
@@ -54,5 +65,92 @@ public class World2PDF {
             e.printStackTrace();
         }
     }
+    public static void wordToPdfWaterMark(String docpath, String pdfpath,
+			String waterMarkName, String logoPath, boolean isdeletetempfile) {
+		try {
+			int index = docpath.lastIndexOf("/");
+			String uuid = UUID.generateUUID();
+			String ttt = "/temp"+uuid+"/";
+			if (index == -1) {
+				index = docpath.lastIndexOf("\\");
+				ttt = "\\temp"+uuid+"\\";
+			}
+			String wenjianjia = docpath.substring(0, index) + ttt;
+
+			String wenjianming = "";
+
+			String temp = wenjianming + UUID.generateUUID();
+
+			File wenjianjiafile = new File(wenjianjia);
+			wenjianjiafile.mkdir();
+
+			WordToPDFByJacob(docpath, wenjianjia + temp + ".pdf");
+			PdfReader reader = new PdfReader(wenjianjia + temp + ".pdf");// 输入PDF
+			PdfStamper stamp = new PdfStamper(reader, new FileOutputStream(
+					pdfpath));// 输出PDF	
+			if(StringUtils.isEmpty(logoPath)){
+				PdfUtils.addWatermark(stamp, waterMarkName);
+				stamp.close(); 
+			}else{
+				Rectangle rect = null;
+				if (reader.getPageSize(1) != null)
+					rect = new Rectangle(reader.getPageSize(1));
+				else
+					rect = new Rectangle(PageSize.A4);
+				PdfUtils.addWatermark(stamp, rect, waterMarkName, logoPath);
+			}
+			if (isdeletetempfile == true) {
+				File[] files = wenjianjiafile.listFiles();
+				for (File file2 : files) {
+					file2.delete();
+				}
+				wenjianjiafile.delete();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+    public static void wordToPdfWaterMark(String docpath, String pdfpath,
+			String waterMarkName, boolean isdeletetempfile) {
+    	wordToPdfWaterMark(docpath, pdfpath, waterMarkName, null, isdeletetempfile);
+	}
+	public static void WordToPDFByJacob(String sfileName, String toFileName) {	
+		long start = System.currentTimeMillis();
+		ActiveXComponent app = null;
+		try {
+			app = new ActiveXComponent("Word.Application");
+			app.setProperty("Visible", false);
+
+			Dispatch docs = app.getProperty("Documents").toDispatch();		
+			Dispatch doc = Dispatch.call(docs,//
+					"Open", //
+					sfileName,// FileName
+					false,// ConfirmConversions
+					true // ReadOnly
+					).toDispatch();
+			Dispatch word=Dispatch.get(doc, "Revisions").toDispatch();
+			Dispatch.call(word, "AcceptAll");
+			File tofile = new File(toFileName);
+			if (tofile.exists()) {
+				tofile.delete();
+			}
+			Dispatch.call(doc,//
+					"SaveAs", //
+					toFileName, // FileName
+					wdFormatPDF);
+
+			Dispatch.call(doc, "Close", false);
+
+			long end = System.currentTimeMillis();
+			System.out.println("转换完成..用时：" + (end - start) + "ms.");
+
+		} catch (Exception e) {
+			System.out.println("========Error:Word文档转换Pdf失败：" + e.getMessage());
+		} finally {
+			if (app != null)
+				app.invoke("Quit", wdDoNotSaveChanges);
+		}
+
+	}
 }
 
