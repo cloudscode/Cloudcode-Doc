@@ -26,17 +26,14 @@
 			<artifactId>jsoup</artifactId>
 			<version>1.8.2</version>
 		</dependency>
-		<!-- <dependency>
-			<groupId>net.sf.jacob-project</groupId>
-			<artifactId>jacob</artifactId>
-			<version>1.14.3</version>
-		</dependency> -->
+		<!-- <dependency> <groupId>net.sf.jacob-project</groupId> <artifactId>jacob</artifactId> 
+			<version>1.14.3</version> </dependency> -->
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>18.0</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi</artifactId>
@@ -51,7 +48,7 @@
 			<groupId>org.textmining</groupId>
 			<artifactId>tm-extractors</artifactId>
 			<version>0.4</version>
-		</dependency>		
+		</dependency>
 		<dependency>
 			<groupId>com.cloudcode</groupId>
 			<artifactId>Cloudcode-Framework</artifactId>
@@ -61,13 +58,18 @@
 			<groupId>net.sf.jacob-project</groupId>
 			<artifactId>jacob</artifactId>
 			<version>1.14.3</version>
-		    <scope>system</scope>
-		     <systemPath>${basedir}/src/main/resources/jacob.jar</systemPath>
+			<scope>system</scope>
+			<systemPath>${basedir}/src/main/resources/jacob.jar</systemPath>
 		</dependency>
 		<dependency>
-            <groupId>org.docx4j</groupId>
-            <artifactId>docx4j</artifactId>
-            <version>3.2.1</version>
-        </dependency>
+			<groupId>org.docx4j</groupId>
+			<artifactId>docx4j</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itextpdf</artifactId>
+			<version>5.5.9</version>
+		</dependency>
 	</dependencies>
 </project>
