@@ -21,6 +21,6 @@ public class ProjectConfig {
 
 	@Bean(name=PREFIX+"docDao")
 	public ModelObjectDao<Doc> generateDocDao(){
-		return new BaseDaoImpl<Doc>();
+		return new BaseDaoImpl<Doc>(Doc.class);
 	}
 }
